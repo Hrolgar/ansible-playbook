@@ -2,6 +2,10 @@
   become: yes
   become_method: sudo
   tasks:
+    - name: Test sudo privileges
+      command: sudo -n true
+      ignore_errors: yes
+    
     - name: Update apt cache and upgrade all packages
       become: yes
       apt:
