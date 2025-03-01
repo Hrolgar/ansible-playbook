@@ -1,5 +1,6 @@
 - hosts: proxmox_vms
   become: yes
+  become_method: sudo
   tasks:
     - name: Update apt cache and upgrade all packages
       apt:
