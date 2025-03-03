@@ -2,23 +2,34 @@
   hosts: all
   become: yes
   tasks:
-    - name: Pull latest aliases from GitHub repository
-      ansible.builtin.shell: |
-        cd ~/my-aliases-repo && git pull
-      args:
-        chdir: ~/my-aliases-repo
+    - name: Ensure Git is installed
+      ansible.builtin.package:
+        name: git
+        state: present
+
+    - name: Clone or update aliases repository
+      ansible.builtin.git:
+        repo: 'https://github.com/Hrolgar/ansible-playbook.git'
+        dest: ~/ansible-playbook
+        update: yes
+        version: main
 
     - name: Copy alias file to VMs
-      copy:
-        src: ~/my-aliases-repo/aliases.txt
+      ansible.builtin.copy:
+        src: ~/ansible-playbook/aliases.txt
         dest: ~/.my_aliases
         owner: "{{ ansible_user }}"
         mode: '0644'
 
     - name: Ensure .bashrc sources .my_aliases
-      lineinfile:
+      ansible.builtin.lineinfile:
         path: ~/.bashrc
         create: yes
         line: 'source ~/.my_aliases'
         state: present
         insertafter: EOF
+
+    - name: Source the updated aliases
+      ansible.builtin.shell: source ~/.bashrc
+      args:
+        executable: /bin/bash
