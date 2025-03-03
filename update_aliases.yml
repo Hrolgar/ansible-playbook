@@ -1,6 +1,11 @@
 - name: Update Aliases on All VMs
   hosts: all
   become: yes
+  vars:
+    alias_file_path: "/home/hrolgar/.my_aliases"
+    repo_path: "/root/ansible-playbook"
+    shared_alias_file: "/root/ansible-playbook/shared/aliases.txt"
+
   tasks:
     - name: Ensure Git is installed
       ansible.builtin.package:
@@ -12,37 +17,65 @@
         name: dos2unix
         state: present
 
+    - name: Get current checksum of the existing aliases file
+      ansible.builtin.shell: |
+        md5sum {{ alias_file_path }} | awk '{ print $1 }'
+      register: current_alias_checksum
+      ignore_errors: yes
+      args:
+        executable: /bin/bash
+
+    - name: Get checksum of the latest aliases file in the repo
+      ansible.builtin.shell: |
+        cd {{ repo_path }}
+        git fetch origin main
+        git show origin/main:shared/aliases.txt | md5sum | awk '{ print $1 }'
+      register: latest_alias_checksum
+      args:
+        executable: /bin/bash
+
+    - name: Display current alias checksum
+      ansible.builtin.debug:
+        var: current_alias_checksum.stdout
+
+    - name: Display latest alias checksum
+      ansible.builtin.debug:
+        var: latest_alias_checksum.stdout
+
     - name: Reset and clean up the local repository
       ansible.builtin.shell: |
-        cd /root/ansible-playbook
+        cd {{ repo_path }}
         git reset --hard
         git clean -fdx
       args:
         executable: /bin/bash
-      ignore_errors: yes
+      when: current_alias_checksum.stdout != latest_alias_checksum.stdout
 
-    - name: Clone or update aliases repository
+    - name: Clone or update aliases repository if file has changed
       ansible.builtin.git:
         repo: 'https://github.com/Hrolgar/ansible-playbook.git'
-        dest: /root/ansible-playbook
+        dest: "{{ repo_path }}"
         update: yes
         version: main
         force: yes
+      when: current_alias_checksum.stdout != latest_alias_checksum.stdout
 
     - name: Convert line endings of aliases file to Unix format
       ansible.builtin.shell: |
-        dos2unix /root/ansible-playbook/shared/aliases.txt
+        dos2unix {{ shared_alias_file }}
       args:
         executable: /bin/bash
+      when: current_alias_checksum.stdout != latest_alias_checksum.stdout
 
     - name: Move alias file to the correct location
       ansible.builtin.shell: |
-        cp /root/ansible-playbook/shared/aliases.txt /home/hrolgar/.my_aliases
-        chown hrolgar:hrolgar /home/hrolgar/.my_aliases
-        ls -lah /home/hrolgar/.my_aliases
+        cp {{ shared_alias_file }} {{ alias_file_path }}
+        chown hrolgar:hrolgar {{ alias_file_path }}
+        ls -lah {{ alias_file_path }}
       register: copy_result
       args:
         executable: /bin/bash
+      when: current_alias_checksum.stdout != latest_alias_checksum.stdout
 
     - name: Ensure .bashrc sources .my_aliases
       become_user: hrolgar
