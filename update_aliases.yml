@@ -6,6 +6,11 @@
       ansible.builtin.package:
         name: git
         state: present
+    
+    - name: Ensure dos2unix is installed
+      ansible.builtin.package:
+        name: dos2unix
+        state: present
 
     - name: Clone or update aliases repository
       ansible.builtin.git:
