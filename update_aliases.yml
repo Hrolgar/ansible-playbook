@@ -14,12 +14,11 @@
         update: yes
         version: main
 
-    - name: Copy alias file to VMs
-      ansible.builtin.copy:
-        src: ~/ansible-playbook/aliases.txt
-        dest: ~/.my_aliases
-        owner: "{{ ansible_user }}"
-        mode: '0644'
+    - name: Move alias file to the correct location
+      ansible.builtin.shell: |
+        cp ~/ansible-playbook/shared/aliases.txt ~/.my_aliases
+      args:
+        executable: /bin/bash
 
     - name: Ensure .bashrc sources .my_aliases
       ansible.builtin.lineinfile:
