@@ -14,15 +14,12 @@
         update: yes
         version: main
 
-    - name: List files in shared folder before copying
-      ansible.builtin.shell: ls -lah /root/ansible-playbook/shared
-      register: shared_files
+    - name: Convert line endings of aliases file to Unix format
+      become: yes
+      ansible.builtin.shell: |
+        dos2unix /root/ansible-playbook/shared/aliases.txt
       args:
         executable: /bin/bash
-
-    - name: Show shared folder contents
-      ansible.builtin.debug:
-        var: shared_files.stdout
 
     - name: Move alias file to the correct location
       become: yes
@@ -33,10 +30,6 @@
       register: copy_result
       args:
         executable: /bin/bash
-
-    - name: Show result of copying aliases file
-      ansible.builtin.debug:
-        var: copy_result.stdout
 
     - name: Ensure .bashrc sources .my_aliases
       become: yes
