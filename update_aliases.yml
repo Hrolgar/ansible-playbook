@@ -25,9 +25,11 @@
         var: shared_files.stdout
 
     - name: Move alias file to the correct location
+      become: yes
+      become_user: hrolgar
       ansible.builtin.shell: |
-        cp /root/ansible-playbook/shared/aliases.txt {{ ansible_user_dir }}/.my_aliases
-        ls -lah {{ ansible_user_dir }}/.my_aliases
+        cp /root/ansible-playbook/shared/aliases.txt /home/hrolgar/.my_aliases
+        ls -lah /home/hrolgar/.my_aliases
       register: copy_result
       args:
         executable: /bin/bash
@@ -37,14 +39,18 @@
         var: copy_result.stdout
 
     - name: Ensure .bashrc sources .my_aliases
+      become: yes
+      become_user: hrolgar
       ansible.builtin.lineinfile:
-        path: "{{ ansible_user_dir }}/.bashrc"
+        path: "/home/hrolgar/.bashrc"
         create: yes
         line: 'source ~/.my_aliases'
         state: present
         insertafter: EOF
 
     - name: Source the updated aliases
-      ansible.builtin.shell: source ~/.bashrc
+      become: yes
+      become_user: hrolgar
+      ansible.builtin.shell: source /home/hrolgar/.bashrc
       args:
         executable: /bin/bash
