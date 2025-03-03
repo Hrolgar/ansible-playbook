@@ -1,0 +1,24 @@
+- name: Update Aliases on All VMs
+  hosts: all
+  become: yes
+  tasks:
+    - name: Pull latest aliases from GitHub repository
+      ansible.builtin.shell: |
+        cd ~/my-aliases-repo && git pull
+      args:
+        chdir: ~/my-aliases-repo
+
+    - name: Copy alias file to VMs
+      copy:
+        src: ~/my-aliases-repo/aliases.txt
+        dest: ~/.my_aliases
+        owner: "{{ ansible_user }}"
+        mode: '0644'
+
+    - name: Ensure .bashrc sources .my_aliases
+      lineinfile:
+        path: ~/.bashrc
+        create: yes
+        line: 'source ~/.my_aliases'
+        state: present
+        insertafter: EOF
