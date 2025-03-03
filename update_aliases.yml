@@ -14,11 +14,27 @@
         update: yes
         version: main
 
+    - name: List files in shared folder before copying
+      ansible.builtin.shell: ls -lah ~/ansible-playbook/shared
+      register: shared_files
+      args:
+        executable: /bin/bash
+
+    - name: Show shared folder contents
+      ansible.builtin.debug:
+        var: shared_files.stdout
+
     - name: Move alias file to the correct location
       ansible.builtin.shell: |
         cp ~/ansible-playbook/shared/aliases.txt ~/.my_aliases
+        ls -lah ~/.my_aliases
+      register: copy_result
       args:
         executable: /bin/bash
+
+    - name: Show result of copying aliases file
+      ansible.builtin.debug:
+        var: copy_result.stdout
 
     - name: Ensure .bashrc sources .my_aliases
       ansible.builtin.lineinfile:
