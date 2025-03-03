@@ -1,2 +1,3 @@
 alias hello='heipådeg'
 alias erruder='emm'
+alias nas='cd /mnt/nas'
