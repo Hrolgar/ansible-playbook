@@ -1,0 +1,2 @@
+alias hello='heipådeg'
+alias erruder='emm'
