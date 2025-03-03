@@ -6,7 +6,7 @@
       ansible.builtin.package:
         name: git
         state: present
-    
+
     - name: Ensure dos2unix is installed
       ansible.builtin.package:
         name: dos2unix
@@ -46,15 +46,15 @@
         state: present
         insertafter: EOF
 
-    - name: Reload bash configuration for hrolgar
+    - name: Show .bashrc content
       become: yes
       become_user: hrolgar
       ansible.builtin.shell: |
-        bash -i -c 'source ~/.bashrc && alias'
-      register: alias_result
+        tail -n 5 /home/hrolgar/.bashrc
+      register: bashrc_content
       args:
         executable: /bin/bash
 
-    - name: Show loaded aliases
+    - name: Display .bashrc content
       ansible.builtin.debug:
-        var: alias_result.stdout
+        var: bashrc_content.stdout
