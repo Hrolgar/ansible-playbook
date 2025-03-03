@@ -48,9 +48,15 @@
         state: present
         insertafter: EOF
 
-    - name: Source the updated aliases
+    - name: Reload bash configuration for hrolgar
       become: yes
       become_user: hrolgar
-      ansible.builtin.shell: source /home/hrolgar/.bashrc
+      ansible.builtin.shell: |
+        bash -i -c 'source ~/.bashrc && alias'
+      register: alias_result
       args:
         executable: /bin/bash
+
+    - name: Show loaded aliases
+      ansible.builtin.debug:
+        var: alias_result.stdout
