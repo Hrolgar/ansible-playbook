@@ -12,22 +12,30 @@
         name: dos2unix
         state: present
 
+    - name: Reset and clean up the local repository
+      ansible.builtin.shell: |
+        cd /root/ansible-playbook
+        git reset --hard
+        git clean -fdx
+      args:
+        executable: /bin/bash
+      ignore_errors: yes
+
     - name: Clone or update aliases repository
       ansible.builtin.git:
         repo: 'https://github.com/Hrolgar/ansible-playbook.git'
         dest: /root/ansible-playbook
         update: yes
         version: main
+        force: yes
 
     - name: Convert line endings of aliases file to Unix format
-      become: yes
       ansible.builtin.shell: |
         dos2unix /root/ansible-playbook/shared/aliases.txt
       args:
         executable: /bin/bash
 
     - name: Move alias file to the correct location
-      become: yes
       ansible.builtin.shell: |
         cp /root/ansible-playbook/shared/aliases.txt /home/hrolgar/.my_aliases
         chown hrolgar:hrolgar /home/hrolgar/.my_aliases
@@ -37,7 +45,6 @@
         executable: /bin/bash
 
     - name: Ensure .bashrc sources .my_aliases
-      become: yes
       become_user: hrolgar
       ansible.builtin.lineinfile:
         path: "/home/hrolgar/.bashrc"
@@ -47,7 +54,6 @@
         insertafter: EOF
 
     - name: Show .bashrc content
-      become: yes
       become_user: hrolgar
       ansible.builtin.shell: |
         tail -n 5 /home/hrolgar/.bashrc
