@@ -26,9 +26,9 @@
 
     - name: Move alias file to the correct location
       become: yes
-      become_user: hrolgar
       ansible.builtin.shell: |
         cp /root/ansible-playbook/shared/aliases.txt /home/hrolgar/.my_aliases
+        chown hrolgar:hrolgar /home/hrolgar/.my_aliases
         ls -lah /home/hrolgar/.my_aliases
       register: copy_result
       args:
