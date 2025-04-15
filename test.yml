@@ -91,13 +91,13 @@
 
     - name: Copy Docker Compose file (from folder 41) for arr-compose.yml locally
       copy:
-        src: "/host_apps/portainer/compose/41/docker-compose.yml"
+        src: "/host_apps/portainer_data/compose/41/docker-compose.yml"
         dest: "{{ local_backup_root }}/ullrservices/arr-compose.yml"
         remote_src: yes
 
     - name: Copy Docker Compose file (from folder 40) for arr-extra-compose.yml locally
       copy:
-        src: "/host_apps/portainer/compose/40/docker-compose.yml"
+        src: "/host_apps/portainer_data/compose/40/docker-compose.yml"
         dest: "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
         remote_src: yes
 
