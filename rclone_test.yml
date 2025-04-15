@@ -1,5 +1,5 @@
 - name: Test rclone connection to Proton Drive
-  hosts: ullrservarr
+  hosts: 10.69.1.4
   become: false
   tasks:
 
