@@ -1,0 +1,14 @@
+- name: Test rclone connection to Proton Drive
+  hosts: ullrservarr
+  become: false
+  tasks:
+
+    - name: Run rclone lsd on proton-remote
+      shell: rclone lsd proton-remote:
+      register: rclone_output
+      failed_when: rclone_output.rc != 0
+      changed_when: false
+
+    - name: Show rclone output
+      debug:
+        msg: "{{ rclone_output.stdout_lines }}"
