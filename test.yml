@@ -4,6 +4,9 @@
   vars:
     services:
       - radarr
+      - sonarr
+      - readarr
+      - readarr-ebooks
     remote_path_base: "/opt/nas/apps"
     today: "{{ ansible_date_time.date }}"
     local_backup_root: "/tmp/ansible_vm_backups/{{ today }}"
