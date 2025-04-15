@@ -11,6 +11,12 @@
     retention_count: 5
 
   tasks:
+    - name: Ensure local backup root exists
+      file:
+        path: "{{ local_backup_root }}/{{ item }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ services }}"
     - name: Find latest backup path on remote host for each service
       shell: "ls -t {{ remote_path_base }}/{{ item }}/Backups/scheduled/*.zip | head -n 1"
       delegate_to: ullrservarr
