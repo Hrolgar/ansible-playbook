@@ -29,13 +29,17 @@
       loop_control:
         label: "{{ item }}"
 
-    - name: Debug latest backups paths gathered from remote host
+    - name: Debug latest backup paths gathered from remote host
       debug:
         msg: "{{ latest_backups.results | map(attribute='stdout') | list }}"
 
-    - name: Set fact with service => remote file path map
+    - name: Set fact mapping each service to its remote backup file path
       set_fact:
         service_backups: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | list)) }}"
+
+    - name: Set fact for backup filenames (basename of remote file)
+      set_fact:
+        service_backup_names: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | map('basename') | list)) }}"
 
     - name: Fetch backup file from remote host for each service
       fetch:
