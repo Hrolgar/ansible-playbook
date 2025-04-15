@@ -39,7 +39,7 @@
 
     - name: Download backup file from remote host for each service
       shell: >
-        scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes
+        sudo scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes
         {{ hostvars['ullrservarr'].ansible_host }}:{{ item.value }}
         {{ local_backup_root }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip
       loop: "{{ service_backups | dict2items }}"
