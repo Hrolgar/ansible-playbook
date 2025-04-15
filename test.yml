@@ -55,24 +55,31 @@
       delay: 5
       until: fetch_result is success
 
-    - name: Upload backup file to Proton Drive for each service
+    - name: Upload backup file to Proton Drive for each service (no date folder)
       shell: >
-        rclone copy "{{ local_backup_root }}/{{ item }}/{{ service_backup_names[item] }}"
-        "{{ proton_remote }}:backups/{{ item }}/{{ today }}/{{ service_backup_names[item] }}"
+        rclone copy
+        "{{ local_backup_root }}/{{ item }}/{{ service_backup_names[item] }}"
+        "{{ proton_remote }}:backups/{{ service_backup_names[item] }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
-    - name: Cleanup old backups in Proton Drive for each service
+    - name: Cleanup old backups in Proton Drive
       shell: |
-        rclone lsjson "{{ proton_remote }}:backups/{{ item }}" --recursive |
+        rclone lsjson "{{ proton_remote }}:backups/" --recursive |
         jq -r '.[] | select(.Path | test("{{ item }}-backup-\\d{4}-\\d{2}-\\d{2}\\.zip$")) | .Path' |
         sort -r | tail -n +{{ retention_count + 1 }} |
-        xargs -r -I {} rclone delete "{{ proton_remote }}:backups/{{ item }}/{}"
+        xargs -r -I {} rclone delete "{{ proton_remote }}:backups/{}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    - name: Remove local backups
+      file:
+        path: "{{ local_backup_root }}"
+        state: absent
+      ignore_errors: true
