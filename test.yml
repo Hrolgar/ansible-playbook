@@ -53,8 +53,8 @@
 
     - name: Upload backup file to Proton Drive for each service
       shell: >
-        rclone copy "{{ local_backup_root }}/{{ item }}/{{ item }}-backup-{{ today }}.zip"
-        "{{ proton_remote }}:backups/{{ item }}/{{ today }}/{{ item }}-backup-{{ today }}.zip"
+        rclone copy "{{ local_backup_root }}/{{ item }}/{{ service_backup_names[item] }}"
+        "{{ proton_remote }}:backups/{{ item }}/{{ today }}/{{ service_backup_names[item] }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
