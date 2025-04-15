@@ -11,12 +11,16 @@
     retention_count: 5
 
   tasks:
-    - name: Test sudo privileges
-      command: sudo -n true
-      register: sudo_test
-      ignore_errors: yes
-      changed_when: sudo_test.rc != 0
-      
+    - name: Fetch backup file from remote host for each service
+      fetch:
+        src: "{{ item.value }}"
+        dest: "{{ local_backup_root }}/{{ item.key }}/"
+        flat: yes
+      delegate_to: ullrservarr
+      loop: "{{ service_backups | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+        
     - name: Ensure local backup root exists for each service
       file:
         path: "{{ local_backup_root }}/{{ item }}"
