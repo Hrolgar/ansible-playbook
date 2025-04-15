@@ -1,5 +1,5 @@
 - name: Test rclone connection to Proton Drive
-  hosts: http://10.69.1.4:3000
+  hosts: localhost
   become: false
   tasks:
 
