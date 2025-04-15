@@ -1,19 +1,19 @@
 - name: Download Servarr Backups from ullrservarr and upload to Proton Drive
-  hosts: ullrservarr
+  hosts: localhost
   gather_facts: false
   vars:
     services:
       - radarr
-    remote_host: "hrolgar@10.69.4.4"  # ullrservarr
     remote_path_base: "/opt/nas/apps"
     local_backup_root: "/tmp/servarr_backups/{{ today }}"
     proton_remote: "proton-remote"
     today: "{{ ansible_date_time.date }}"
     retention_count: 5
+
   tasks:
-    - name: Find latest backup path on remote host
-      shell: |
-        ssh {{ remote_host }} "ls -t {{ remote_path_base }}/{{ item }}/Backups/scheduled/*.zip | head -n 1"
+    - name: Find latest backup path on remote host for each service
+      shell: "ls -t {{ remote_path_base }}/{{ item }}/Backups/scheduled/*.zip | head -n 1"
+      delegate_to: ullrservarr
       register: latest_backups
       retries: 3
       delay: 5
@@ -22,34 +22,6 @@
       loop_control:
         label: "{{ item }}"
 
-    # - name: Set fact with service => remote file path map
-    #   set_fact:
-    #     service_backups: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | list)) }}"
-
-    # - name: Download backup file from remote host
-    #   shell: >
-    #     scp {{ remote_host }}:"{{ item.value }}"
-    #     "{{ local_backup_root }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip"
-    #   loop: "{{ service_backups | dict2items }}"
-    #   loop_control:
-    #     label: "{{ item.key }}"
-    #   retries: 3
-    #   delay: 5
-    #   register: result
-    #   until: result.rc == 0
-
-    # - name: Upload backup to Proton Drive
-    #   shell: >
-    #     rclone copy "{{ local_backup_root }}/{{ item }}/{{ item }}-backup-{{ today }}.zip"
-    #     "{{ proton_remote }}:backups/{{ item }}/{{ today }}/{{ item }}-backup-{{ today }}.zip"
-    #   loop: "{{ services }}"
-    #   loop_control:
-    #     label: "{{ item }}"
-
-    # - name: Cleanup old backups in Proton Drive (per service, across all dates)
-    #   shell: |
-    #     rclone lsjson "{{ proton_remote }}:backups/{{ item }}" --recursive \
-    #     | jq -r '.[] | select(.Path | test("{{ item }}-backup-\\d{4}-\\d{2}-\\d{2}\\.zip$")) | .Path' \
-    #     | sort -r \
-    #     | tail -n +{{ retention_count + 1 }} \
-    #     | xargs -I {} rclone delete "{{ proton_remote }}:backups/{{ item }}/{}_
+    - name: Debug latest backups paths gathered from remote host
+      debug:
+        msg: "{{ latest_backups.results | map(attribute='stdout') | list }}"
