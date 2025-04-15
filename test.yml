@@ -6,7 +6,7 @@
       - radarr
     remote_path_base: "/opt/nas/apps"
     today: "{{ ansible_date_time.date }}"
-    local_backup_root: "/tmp/servarr_backups/{{ today }}"
+    local_backup_root: "/tmp/ansible_vm_backups/{{ today }}"
     proton_remote: "proton-remote"
     retention_count: 5
 
@@ -59,7 +59,7 @@
       shell: >
         rclone copy
         "{{ local_backup_root }}/{{ item }}/{{ service_backup_names[item] }}"
-        "{{ proton_remote }}:backups/{{ service_backup_names[item] }}"
+        "{{ proton_remote }}:backups/{{ today }}/{{ item }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
