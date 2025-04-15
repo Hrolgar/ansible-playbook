@@ -4,10 +4,7 @@
   vars:
     # List of applications for which backup files are fetched.
     services:
-      - radarr
-      - sonarr
-      - readarr
-      - readarr-ebooks
+      - prowlarr
     remote_path_base: "/opt/nas/apps"
     today: "{{ ansible_date_time.date }}"
     # Local backup folder (inside your Semaphore container)
