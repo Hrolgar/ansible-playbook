@@ -5,13 +5,13 @@
     services:
       - radarr
     remote_path_base: "/opt/nas/apps"
+    today: "{{ ansible_date_time.date }}"
     local_backup_root: "/tmp/servarr_backups/{{ today }}"
     proton_remote: "proton-remote"
-    today: "{{ ansible_date_time.date }}"
     retention_count: 5
 
   tasks:
-    - name: Ensure local backup root exists
+    - name: Ensure local backup root exists for each service
       file:
         path: "{{ local_backup_root }}/{{ item }}"
         state: directory
@@ -28,15 +28,19 @@
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
-
+        
     - name: Debug latest backups paths gathered from remote host
       debug:
         msg: "{{ latest_backups.results | map(attribute='stdout') | list }}"
 
+    - name: Set fact with service => remote file path map
+      set_fact:
+        service_backups: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | list)) }}"
+
     - name: Download backup file from remote host for each service
       shell: >
-        scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes 
-        {{ hostvars['ullrservarr'].ansible_host }}:{{ item.value }} 
+        scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes
+        {{ hostvars['ullrservarr'].ansible_host }}:{{ item.value }}
         {{ local_backup_root }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip
       loop: "{{ service_backups | dict2items }}"
       loop_control:
