@@ -1,6 +1,6 @@
 - name: Download Servarr Backups from ullrservarr and upload to Proton Drive
   hosts: localhost
-  gather_facts: false
+  gather_facts: true
   vars:
     services:
       - radarr
