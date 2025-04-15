@@ -1,49 +1,41 @@
-- name: Download Servarr Backups from ullrservarr and upload to Proton Drive
-  hosts: localhost
+- delay: 5
   gather_facts: true
-  vars:
-    services:
-      - radarr
-    remote_path_base: "/opt/nas/apps"
-    local_backup_root: "/tmp/servarr_backups/{{ today }}"
-    proton_remote: "proton-remote"
-    today: "{{ ansible_date_time.date }}"
-    retention_count: 5
+  hosts: localhost
+  loop: '{{ service_backups | dict2items }}'
+  loop_control: {label: '{{ item.key }}'}
+  name: Download Servarr Backups from ullrservarr and upload to Proton Drive
+  register: download_result
+  retries: 3
+  shell: 'scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes  {{
+    hostvars[''ullrservarr''].ansible_host }}:{{ item.value }}  {{ local_backup_root
+    }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip
 
+    '
   tasks:
-    - name: Ensure local backup root exists
-      file:
-        path: "{{ local_backup_root }}/{{ item }}"
-        state: directory
-        mode: "0755"
-      loop: "{{ services }}"
-      
-    - name: Find latest backup path on remote host for each service
-      shell: "ls -t {{ remote_path_base }}/{{ item }}/Backups/scheduled/*.zip | head -n 1"
-      delegate_to: ullrservarr
-      register: latest_backups
-      retries: 3
-      delay: 5
-      until: latest_backups.rc == 0
-      loop: "{{ services }}"
-      loop_control:
-        label: "{{ item }}"
-
-    - name: Debug latest backups paths gathered from remote host
-      debug:
-        msg: "{{ latest_backups.results | map(attribute='stdout') | list }}"
-
-    - name: Set fact with service => remote file path map
-      set_fact:
-        service_backups: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | list)) }}"
-
-    - name: Download backup file from remote host for each service
-      shell: >
-        scp {{ hostvars['ullrservarr'].ansible_host }}:{{ item.value }} {{ local_backup_root }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip
-      loop: "{{ service_backups | dict2items }}"
-      loop_control:
-        label: "{{ item.key }}"
-      register: download_result
-      retries: 3
-      delay: 5
-      until: download_result.rc == 0
+  - file: {mode: '0755', path: '{{ local_backup_root }}/{{ item }}', state: directory}
+    loop: '{{ services }}'
+    name: Ensure local backup root exists
+  - delay: 5
+    delegate_to: ullrservarr
+    loop: '{{ services }}'
+    loop_control: {label: '{{ item }}'}
+    name: Find latest backup path on remote host for each service
+    register: latest_backups
+    retries: 3
+    shell: ls -t {{ remote_path_base }}/{{ item }}/Backups/scheduled/*.zip | head
+      -n 1
+    until: latest_backups.rc == 0
+  - debug: {msg: '{{ latest_backups.results | map(attribute=''stdout'') | list }}'}
+    name: Debug latest backups paths gathered from remote host
+  - name: Set fact with service => remote file path map
+    set_fact: {service_backups: '{{ dict(services | zip(latest_backups.results | map(attribute=''stdout'')
+        | list)) }}'}
+  - {name: Download backup file from remote host for each service}
+  until: download_result.rc == 0
+  vars:
+    local_backup_root: /tmp/servarr_backups/{{ today }}
+    proton_remote: proton-remote
+    remote_path_base: /opt/nas/apps
+    retention_count: 5
+    services: [radarr]
+    today: '{{ ansible_date_time.date }}'
