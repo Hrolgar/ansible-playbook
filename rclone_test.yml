@@ -6,6 +6,8 @@
   tasks:
     - name: Run rclone lsd on proton-remote
       shell: "rclone lsd 'proton-remote:'"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
       register: rclone_output
       failed_when: rclone_output.rc != 0
       changed_when: false
