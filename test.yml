@@ -25,3 +25,18 @@
     - name: Debug latest backups paths gathered from remote host
       debug:
         msg: "{{ latest_backups.results | map(attribute='stdout') | list }}"
+
+    - name: Set fact with service => remote file path map
+      set_fact:
+        service_backups: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | list)) }}"
+
+    - name: Download backup file from remote host for each service
+      shell: >
+        scp ullrservarr:{{ item.value }} {{ local_backup_root }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip
+      loop: "{{ service_backups | dict2items }}"
+      loop_control:
+        label: "{{ item.key }}"
+      register: download_result
+      retries: 3
+      delay: 5
+      until: download_result.rc == 0
