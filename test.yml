@@ -11,23 +11,13 @@
     retention_count: 5
 
   tasks:
-    - name: Fetch backup file from remote host for each service
-      fetch:
-        src: "{{ item.value }}"
-        dest: "{{ local_backup_root }}/{{ item.key }}/"
-        flat: yes
-      delegate_to: ullrservarr
-      loop: "{{ service_backups | dict2items }}"
-      loop_control:
-        label: "{{ item.key }}"
-        
     - name: Ensure local backup root exists for each service
       file:
         path: "{{ local_backup_root }}/{{ item }}"
         state: directory
         mode: "0755"
       loop: "{{ services }}"
-      
+
     - name: Find latest backup path on remote host for each service
       shell: "ls -t {{ remote_path_base }}/{{ item }}/Backups/scheduled/*.zip | head -n 1"
       delegate_to: ullrservarr
@@ -38,7 +28,7 @@
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
-        
+
     - name: Debug latest backups paths gathered from remote host
       debug:
         msg: "{{ latest_backups.results | map(attribute='stdout') | list }}"
@@ -47,15 +37,38 @@
       set_fact:
         service_backups: "{{ dict(services | zip(latest_backups.results | map(attribute='stdout') | list)) }}"
 
-    - name: Download backup file from remote host for each service
-      shell: >
-        sudo scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no -o BatchMode=yes
-        {{ hostvars['ullrservarr'].ansible_host }}:{{ item.value }}
-        {{ local_backup_root }}/{{ item.key }}/{{ item.key }}-backup-{{ today }}.zip
+    - name: Fetch backup file from remote host for each service
+      fetch:
+        src: "{{ item.value }}"
+        dest: "{{ local_backup_root }}/{{ item.key }}/"
+        flat: yes
+      delegate_to: ullrservarr
       loop: "{{ service_backups | dict2items }}"
       loop_control:
         label: "{{ item.key }}"
-      register: download_result
+      register: fetch_result
       retries: 3
       delay: 5
-      until: download_result.rc == 0
+      until: fetch_result is success
+
+    - name: Upload backup file to Proton Drive for each service
+      shell: >
+        rclone copy "{{ local_backup_root }}/{{ item }}/{{ item }}-backup-{{ today }}.zip"
+        "{{ proton_remote }}:backups/{{ item }}/{{ today }}/{{ item }}-backup-{{ today }}.zip"
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item }}"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    - name: Cleanup old backups in Proton Drive for each service
+      shell: |
+        rclone lsjson "{{ proton_remote }}:backups/{{ item }}" --recursive |
+        jq -r '.[] | select(.Path | test("{{ item }}-backup-\\d{4}-\\d{2}-\\d{2}\\.zip$")) | .Path' |
+        sort -r | tail -n +{{ retention_count + 1 }} |
+        xargs -r -I {} rclone delete "{{ proton_remote }}:backups/{{ item }}/{}"
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item }}"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
