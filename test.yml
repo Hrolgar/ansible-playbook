@@ -94,7 +94,7 @@
         src: "/opt/nas/apps/portainer/compose/41/docker-compose.yml"
         dest: "{{ local_backup_root }}/ullrservices/arr-compose.yml"
         flat: yes
-      delegate_to: ullrservarr
+      delegate_to: ullrservices
       register: fetch_arr_compose
       retries: 3
       delay: 5
@@ -105,7 +105,7 @@
         src: "/opt/nas/apps/portainer/compose/40/docker-compose.yml"
         dest: "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
         flat: yes
-      delegate_to: ullrservarr
+      delegate_to: ullrservices
       register: fetch_arr_extra
       retries: 3
       delay: 5
