@@ -95,25 +95,25 @@
         dest: "{{ local_backup_root }}/ullrservices/arr-compose.yml"
         remote_src: yes
 
+    - name: Upload arr-compose.yml (from folder 41) to Proton Drive
+      shell: >
+        rclone copy
+        "{{ local_backup_root }}/ullrservices/arr-compose.yml"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
     - name: Copy Docker Compose file (from folder 40) for arr-extra-compose.yml locally
       copy:
         src: "/host_apps/portainer_data/compose/40/docker-compose.yml"
         dest: "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
         remote_src: yes
 
-    - name: Upload arr-compose.yml (from folder 41) to Proton Drive
-      shell: >
-        rclone copy
-        "{{ local_backup_root }}/ullrservices/arr-compose.yml"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/arr-compose.yml"
-      environment:
-        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
-
     - name: Upload arr-extra-compose.yml (from folder 40) to Proton Drive
       shell: >
         rclone copy
         "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/arr-extra-compose.yml"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
