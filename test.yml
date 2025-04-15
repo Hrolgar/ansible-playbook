@@ -11,6 +11,12 @@
     retention_count: 5
 
   tasks:
+    - name: Test sudo privileges
+      command: sudo -n true
+      register: sudo_test
+      ignore_errors: yes
+      changed_when: sudo_test.rc != 0
+      
     - name: Ensure local backup root exists for each service
       file:
         path: "{{ local_backup_root }}/{{ item }}"
