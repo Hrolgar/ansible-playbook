@@ -1,7 +1,8 @@
-- name: Download Servarr Backups from ullrservarr and upload to Proton Drive
+- name: Download Servarr Backups and Upload to Proton Drive, plus ullrservices Docker Compose Files
   hosts: localhost
   gather_facts: true
   vars:
+    # List of applications for which backup files are fetched.
     services:
       - radarr
       - sonarr
@@ -9,11 +10,15 @@
       - readarr-ebooks
     remote_path_base: "/opt/nas/apps"
     today: "{{ ansible_date_time.date }}"
+    # Local backup folder (inside your Semaphore container)
     local_backup_root: "/tmp/ansible_vm_backups/{{ today }}"
     proton_remote: "proton-remote"
     retention_count: 5
 
   tasks:
+    ###############################################
+    # Part 1 – Per-Service Backup Download & Upload
+    ###############################################
     - name: Ensure local backup root exists for each service
       file:
         path: "{{ local_backup_root }}/{{ item }}"
@@ -58,29 +63,76 @@
       delay: 5
       until: fetch_result is success
 
-    - name: Upload backup file to Proton Drive for each service (no date folder)
+    - name: Upload backup file to Proton Drive for each service (no extra folder)
       shell: >
         rclone copy
         "{{ local_backup_root }}/{{ item }}/{{ service_backup_names[item] }}"
-        "{{ proton_remote }}:backups/{{ today }}/{{ item }}"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item }}/{{ service_backup_names[item] }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
-    - name: Cleanup old backups in Proton Drive
+    - name: Cleanup old backups in Proton Drive for Servarr backups
       shell: |
-        rclone lsjson "{{ proton_remote }}:backups/" --recursive |
-        jq -r '.[] | select(.Path | test("{{ item }}-backup-\\d{4}-\\d{2}-\\d{2}\\.zip$")) | .Path' |
+        rclone lsjson "{{ proton_remote }}:backups/{{ today }}/" --recursive |
+        jq -r '.[] | select(.Path | test(".*\\.zip$")) | .Path' |
         sort -r | tail -n +{{ retention_count + 1 }} |
         xargs -r -I {} rclone delete "{{ proton_remote }}:backups/{}"
-      loop: "{{ services }}"
-      loop_control:
-        label: "{{ item }}"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
+    ###################################################
+    # Part 2 – One-Time Fetch & Upload of Compose Files
+    ###################################################
+    - name: Ensure local backup folder for ullrservices exists
+      file:
+        path: "{{ local_backup_root }}/ullrservices"
+        state: directory
+        mode: "0755"
+
+    - name: Fetch Docker Compose file (from folder 41) for arr-compose.yml
+      fetch:
+        src: "/opt/nas/apps/portainer/compose/41/docker-compose.yml"
+        dest: "{{ local_backup_root }}/ullrservices/arr-compose.yml"
+        flat: yes
+      delegate_to: ullrservarr
+      register: fetch_arr_compose
+      retries: 3
+      delay: 5
+      until: fetch_arr_compose is success
+
+    - name: Fetch Docker Compose file (from folder 40) for arr-extra-compose.yml
+      fetch:
+        src: "/opt/nas/apps/portainer/compose/40/docker-compose.yml"
+        dest: "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
+        flat: yes
+      delegate_to: ullrservarr
+      register: fetch_arr_extra
+      retries: 3
+      delay: 5
+      until: fetch_arr_extra is success
+
+    - name: Upload arr-compose.yml (from folder 41) to Proton Drive
+      shell: >
+        rclone copy
+        "{{ local_backup_root }}/ullrservices/arr-compose.yml"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/arr-compose.yml"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    - name: Upload arr-extra-compose.yml (from folder 40) to Proton Drive
+      shell: >
+        rclone copy
+        "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/arr-extra-compose.yml"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    #########################
+    # Final Cleanup
+    #########################
     - name: Remove local backups
       file:
         path: "{{ local_backup_root }}"
