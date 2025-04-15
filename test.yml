@@ -64,7 +64,7 @@
       shell: >
         rclone copy
         "{{ local_backup_root }}/{{ item }}/{{ service_backup_names[item] }}"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item }}/{{ service_backup_names[item] }}"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item }}"
