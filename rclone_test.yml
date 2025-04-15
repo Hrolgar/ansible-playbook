@@ -4,7 +4,7 @@
   tasks:
 
     - name: Run rclone lsd on proton-remote
-      shell: rclone lsd proton-remote:
+      shell: "rclone lsd 'proton-remote:'"
       register: rclone_output
       failed_when: rclone_output.rc != 0
       changed_when: false
