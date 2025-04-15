@@ -1,8 +1,9 @@
-- name: Test rclone connection to Proton Drive
-  hosts: ullrservices
-  become: false
-  tasks:
+- name: Test rclone on local VM
+  hosts: localhost
+  gather_facts: false
+  connection: local
 
+  tasks:
     - name: Run rclone lsd on proton-remote
       shell: "rclone lsd 'proton-remote:'"
       register: rclone_output
