@@ -16,13 +16,13 @@
     #######################################################
     # Initial Setup – Ensure Local Backup Root Directory Exists
     #######################################################
-    - name: Ensure /tmp/ansible_vm_backups exists on localhost
-      file:
-        path: "/tmp/ansible_vm_backups"
-        state: directory
-        mode: "0755"
+    - name: Ensure parent directory /tmp/ansible_vm_backups exists on localhost
+      command: mkdir -p /tmp/ansible_vm_backups
+      changed_when: false
 
-
+    - name: Ensure local backup root directory for today exists on localhost
+      command: mkdir -p {{ local_backup_root }}
+      changed_when: false
 
     #######################################################
     # Part 1 – Unified Service Backup Download & Upload
