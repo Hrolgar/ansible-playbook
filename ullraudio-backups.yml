@@ -17,9 +17,8 @@
     #######################################################
     - name: Ensure full local backup directory tree exists on localhost
       shell: "mkdir -p {{ local_backup_root }}"
-      args:
-        warn: false
-      changed_when: false
+      register: mkdir_result
+      changed_when: mkdir_result.rc == 0
 
     #######################################################
     # Part 1 – Unified Service Backup Download & Upload
