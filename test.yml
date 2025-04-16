@@ -13,6 +13,45 @@
     retention_count: 5
 
   tasks:
+     ###################################################
+    # Part 3 – Bazarr Backup (Different Folder Structure)
+  ###################################################
+    - name: Find latest Bazarr backup file
+      shell: "ls -t {{ remote_path_base }}/bazarr/backup/*.zip | head -n 1"
+      delegate_to: ullrservarr
+      register: bazarr_backup
+      retries: 3
+      delay: 5
+      until: bazarr_backup.rc == 0
+
+    - name: Debug Bazarr backup path
+      debug:
+        msg: "Bazarr backup: {{ bazarr_backup.stdout }}"
+
+    - name: Ensure local backup folder for Bazarr exists
+      file:
+        path: "{{ local_backup_root }}/bazarr"
+        state: directory
+        mode: "0755"
+
+    - name: Fetch Bazarr backup file
+      fetch:
+        src: "{{ bazarr_backup.stdout }}"
+        dest: "{{ local_backup_root }}/bazarr/"
+        flat: yes
+      delegate_to: ullrservarr
+      register: fetch_bazarr
+      retries: 3
+      delay: 5
+      until: fetch_bazarr is success
+
+    - name: Upload Bazarr backup to Proton Drive
+      shell: >
+        rclone copy
+        "{{ local_backup_root }}/bazarr/{{ bazarr_backup.stdout | basename }}"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/bazarr/"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
     ###############################################
     # Part 1 – Per-Service Backup Download & Upload
     ###############################################
@@ -117,45 +156,7 @@
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
         
-   ###################################################
-    # Part 3 – Bazarr Backup (Different Folder Structure)
-  ###################################################
-    - name: Find latest Bazarr backup file
-      shell: "ls -t {{ remote_path_base }}/bazarr/backup/*.zip | head -n 1"
-      delegate_to: ullrservarr
-      register: bazarr_backup
-      retries: 3
-      delay: 5
-      until: bazarr_backup.rc == 0
 
-    - name: Debug Bazarr backup path
-      debug:
-        msg: "Bazarr backup: {{ bazarr_backup.stdout }}"
-
-    - name: Ensure local backup folder for Bazarr exists
-      file:
-        path: "{{ local_backup_root }}/bazarr"
-        state: directory
-        mode: "0755"
-
-    - name: Fetch Bazarr backup file
-      fetch:
-        src: "{{ bazarr_backup.stdout }}"
-        dest: "{{ local_backup_root }}/bazarr/"
-        flat: yes
-      delegate_to: ullrservarr
-      register: fetch_bazarr
-      retries: 3
-      delay: 5
-      until: fetch_bazarr is success
-
-    - name: Upload Bazarr backup to Proton Drive
-      shell: >
-        rclone copy
-        "{{ local_backup_root }}/bazarr/{{ bazarr_backup.stdout | basename }}"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/bazarr/"
-      environment:
-        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
     #########################
     # Final Cleanup
