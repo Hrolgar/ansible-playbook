@@ -37,6 +37,15 @@
       loop: "{{ services }}"
       loop_control:
         label: "{{ item.name }}"
+
+    - name: Ensure local backup directory for each zip service exists on localhost
+      file:
+        path: "{{ local_backup_root }}/{{ item.name }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
     
     - name: Fetch zipped backup file from remote host for each zip service
       fetch:
