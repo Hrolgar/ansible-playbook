@@ -16,7 +16,13 @@
     #######################################################
     # Initial Setup – Ensure Local Backup Root Directory Exists
     #######################################################
-    - name: Ensure local backup root directory exists
+    - name: Ensure /tmp/ansible_vm_backups exists on localhost
+      file:
+        path: "/tmp/ansible_vm_backups"
+        state: directory
+        mode: "0755"
+
+    - name: Ensure local backup root directory for today exists on localhost
       file:
         path: "{{ local_backup_root }}"
         state: directory
