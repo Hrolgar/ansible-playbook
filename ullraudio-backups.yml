@@ -22,11 +22,7 @@
         state: directory
         mode: "0755"
 
-    - name: Ensure local backup root directory for today exists on localhost
-      file:
-        path: "{{ local_backup_root }}"
-        state: directory
-        mode: "0755"
+
 
     #######################################################
     # Part 1 – Unified Service Backup Download & Upload
