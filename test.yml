@@ -91,15 +91,6 @@
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
-    - name: Cleanup old backups in Proton Drive for Servarr backups
-      shell: |
-        rclone lsjson "{{ proton_remote }}:backups/{{ today }}/ullrservices/" --recursive |
-        jq -r '.[] | select(.Path | test(".*\\.zip$")) | .Path' |
-        sort -r | tail -n +{{ retention_count + 1 }} |
-        xargs -r -I {} rclone delete "{{ proton_remote }}:backups/{}"
-      environment:
-        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
-
     #######################################################
     # Part 2 – Docker Compose Files Backup & Upload
     #######################################################
