@@ -90,7 +90,7 @@
       shell: >
         rclone copy
         "{{ local_backup_root }}/{{ item.name }}/{{ service_backup_names[item.name] }}"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item.name }}"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservarr/{{ item.name }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item.name }}"
@@ -134,7 +134,7 @@
     - name: Upload zipped folder backup to Proton Drive for each zip service
       shell: >
         rclone copy "{{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item.name }}"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservarr/{{ item.name }}"
       loop: "{{ zip_services }}"
       loop_control:
         label: "{{ item.name }}"
@@ -169,7 +169,7 @@
       shell: >
         rclone copy
         "{{ local_backup_root }}/ullrservices/arr-compose.yml"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservarr/"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
@@ -183,7 +183,7 @@
       shell: >
         rclone copy
         "{{ local_backup_root }}/ullrservices/arr-extra-compose.yml"
-        "{{ proton_remote }}:backups/{{ today }}/ullrservices/"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservarr/"
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
