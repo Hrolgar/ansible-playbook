@@ -134,7 +134,7 @@
 
     - name: Cleanup remote temporary backups for each zip service
       file:
-        path: "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}"
+        path: "/tmp/ansible_vm_backups/{{ today }}"
         state: absent
       delegate_to: ullrservarr
       loop: "{{ zip_services }}"
