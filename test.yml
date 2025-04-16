@@ -21,6 +21,12 @@
         backup_path: "{{ remote_path_base }}/readarr-ebooks/Backups/scheduled/*.zip"
       - name: bazarr
         backup_path: "{{ remote_path_base }}/bazarr/backup/*.zip"
+        
+    zip_services:
+      - name: jellyseerr
+        folder: "{{ remote_path_base }}/jellyseerr"
+      - name: jellystat
+        folder: "{{ remote_path_base }}/jellystat"
 
   tasks:
     #######################################################
@@ -86,6 +92,40 @@
         "{{ local_backup_root }}/{{ item.name }}/{{ service_backup_names[item.name] }}"
         "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item.name }}"
       loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    #######################################################
+    # Part 1B – Zip Folder Backup for Services Without Scheduled Backups
+    #######################################################
+    - name: Ensure local backup directory for each zip service exists
+      file:
+        path: "{{ local_backup_root }}/{{ item.name }}"
+        state: directory
+        mode: "0755"
+      loop: "{{ zip_services }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Zip the folder for each zip service
+      shell: "zip -r {{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip {{ item.folder }}"
+      delegate_to: ullrservarr
+      register: zip_result
+      retries: 3
+      delay: 5
+      until: zip_result.rc == 0
+      loop: "{{ zip_services }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Upload zipped folder backup to Proton Drive for each zip service
+      shell: >
+        rclone copy
+        "{{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
+        "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item.name }}"
+      loop: "{{ zip_services }}"
       loop_control:
         label: "{{ item.name }}"
       environment:
