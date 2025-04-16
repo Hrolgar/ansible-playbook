@@ -101,7 +101,7 @@
       loop_control:
         label: "{{ item.name }}"
     
-    - name: Zip the folder for each zip service
+    - name: Zip the folder for each zip service on remote host
       shell: "zip -r /tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip {{ item.folder }}"
       delegate_to: ullrservarr
       register: zip_result
@@ -112,10 +112,19 @@
       loop_control:
         label: "{{ item.name }}"
     
+    - name: Fetch zipped backup file from remote host for each zip service
+      fetch:
+        src: "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
+        dest: "{{ local_backup_root }}/{{ item.name }}/"
+        flat: yes
+      delegate_to: ullrservarr
+      loop: "{{ zip_services }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
     - name: Upload zipped folder backup to Proton Drive for each zip service
       shell: >
-        rclone copy
-        "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
+        rclone copy "{{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
         "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item.name }}"
       loop: "{{ zip_services }}"
       loop_control:
