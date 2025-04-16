@@ -132,6 +132,15 @@
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
+    - name: Cleanup remote temporary backups for each zip service
+      file:
+        path: "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}"
+        state: absent
+      delegate_to: ullrservarr
+      loop: "{{ zip_services }}"
+      loop_control:
+        label: "{{ item.name }}"
+
     #######################################################
     # Part 2 – Docker Compose Files Backup & Upload
     #######################################################
