@@ -11,7 +11,16 @@
     services:
       - name: radarr
         backup_path: "{{ remote_path_base }}/radarr/Backups/scheduled/*.zip"
-
+      - name: sonarr
+        backup_path: "{{ remote_path_base }}/sonarr/Backups/scheduled/*.zip"
+      - name: prowlarr
+        backup_path: "{{ remote_path_base }}/prowlarr/Backups/scheduled/*.zip"
+      - name: readarr
+        backup_path: "{{ remote_path_base }}/readarr/Backups/scheduled/*.zip"
+      - name: readarr-ebooks
+        backup_path: "{{ remote_path_base }}/readarr-ebooks/Backups/scheduled/*.zip"
+      - name: bazarr
+        backup_path: "{{ remote_path_base }}/bazarr/backup/*.zip"
         
     zip_services:
       - name: jellyseerr
