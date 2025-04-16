@@ -1,1 +1,99 @@
+- name: Download Qbit Backups and Upload to Proton Drive, plus ullrservices Docker Compose Files
+  hosts: localhost
+  gather_facts: true
+  vars:
+    remote_path_base: "/opt/nas/apps"
+    today: "{{ ansible_date_time.date }}"
+    # Local backup folder (inside your Semaphore container)
+    local_backup_root: "/tmp/ansible_vm_backups/{{ today }}"
+    proton_remote: "proton-remote"
+    retention_count: 5
+    services:
+      - name: qbittorrent
+        folder: "{{ remote_path_base }}/qbittorrent"
 
+  tasks:
+    #######################################################
+    # Part 1 – Zip Folder Backup for Services Without Scheduled Backups
+    #######################################################
+    - name: Ensure remote backup directory for each zip service exists
+      file:
+        path: "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}"
+        state: directory
+        mode: "0755"
+      delegate_to: ullrqbit
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Zip the folder for each zip service on remote host
+      shell: "zip -r /tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip {{ item.folder }}"
+      delegate_to: ullrqbit
+      register: zip_result
+      retries: 3
+      delay: 5
+      until: zip_result.rc == 0
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Fetch zipped backup file from remote host for each zip service
+      fetch:
+        src: "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
+        dest: "{{ local_backup_root }}/{{ item.name }}/"
+        flat: yes
+      delegate_to: ullrqbit
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
+    
+    - name: Upload zipped folder backup to Proton Drive for each zip service
+      shell: >
+        rclone copy "{{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
+        "{{ proton_remote }}:backups/{{ today }}/ullrqbit/{{ item.name }}"
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    - name: Cleanup remote temporary backups for each zip service
+      file:
+        path: "/tmp/ansible_vm_backups/{{ today }}"
+        state: absent
+      delegate_to: ullrqbit
+      loop: "{{ services }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    #######################################################
+    # Part 2 – Docker Compose Files Backup & Upload
+    #######################################################
+    - name: Ensure local backup folder for ullrqbit exists
+      file:
+        path: "{{ local_backup_root }}/ullrqbit"
+        state: directory
+        mode: "0755"
+
+    - name: Copy Docker Compose file
+      copy:
+        src: "/host_apps/portainer_data/compose/12/docker-compose.yml"
+        dest: "{{ local_backup_root }}/ullrservices/qbit-compose.yml"
+        remote_src: yes
+
+    - name: Upload arr-compose.yml to Proton Drive
+      shell: >
+        rclone copy
+        "{{ local_backup_root }}/ullrservices/qbit-compose.yml"
+        "{{ proton_remote }}:backups/{{ today }}/ullrqbit/"
+      environment:
+        RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
+
+    #######################################################
+    # Final Cleanup
+    #######################################################
+    - name: Remove local backups
+      file:
+        path: "{{ local_backup_root }}"
+        state: absent
+      ignore_errors: true
