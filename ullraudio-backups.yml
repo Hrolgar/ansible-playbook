@@ -17,6 +17,7 @@
     #######################################################
     - name: Ensure full local backup directory tree exists on localhost
       shell: "mkdir -p {{ local_backup_root }}"
+      become: true
       register: mkdir_result
       changed_when: mkdir_result.rc == 0
 
