@@ -15,19 +15,20 @@
     #######################################################
     # Initial Setup – Create the full backup directory tree on localhost
     #######################################################
-    - name: Ensure parent directory /tmp/ansible_vm_backups exists on localhost
-      file:
-        path: "/tmp/ansible_vm_backups"
-        state: directory
-        mode: "0755"
+    - name: Ensure full local backup directory tree exists on localhost
+      shell: "/bin/mkdir -p {{ local_backup_root }}"
+      args:
+        creates: "{{ local_backup_root }}"
       become: true
-
-    - name: Ensure local backup root directory for today exists on localhost
-      file:
-        path: "{{ local_backup_root }}"
-        state: directory
-        mode: "0755"
+      register: mkdir_result
+    
+    - name: Verify that the local backup directory exists
+      command: /bin/ls -ld {{ local_backup_root }}
       become: true
+      register: ls_result
+    
+    - debug:
+        var: ls_result.stdout
     #######################################################
     # Part 1 – Unified Service Backup Download & Upload
     #######################################################
