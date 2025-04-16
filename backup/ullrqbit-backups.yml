@@ -34,7 +34,7 @@
       retries: 3
       delay: 5
       until: zip_result.rc == 0
-      loop: "{{ zip_services }}"
+      loop: "{{ services }}"
       loop_control:
         label: "{{ item.name }}"
     
