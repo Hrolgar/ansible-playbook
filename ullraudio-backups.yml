@@ -12,8 +12,16 @@
       - name: audiobookshelf
         backup_path: "{{ remote_path_base }}/audiobookshelf/metadata/backups/*.audiobookshelf"
 
-
   tasks:
+    #######################################################
+    # Initial Setup – Ensure Local Backup Root Directory Exists
+    #######################################################
+    - name: Ensure local backup root directory exists
+      file:
+        path: "{{ local_backup_root }}"
+        state: directory
+        mode: "0755"
+
     #######################################################
     # Part 1 – Unified Service Backup Download & Upload
     #######################################################
@@ -85,19 +93,19 @@
     #######################################################
     # Part 2 – Docker Compose Files Backup & Upload
     #######################################################
-    - name: Ensure local backup folder for ullrservices exists
+    - name: Ensure local backup folder for ullraudio exists
       file:
         path: "{{ local_backup_root }}/ullraudio"
         state: directory
         mode: "0755"
 
-    - name: Copy Docker Compose file for arr-compose.yml locally (Folder 41)
+    - name: Copy Docker Compose file for audio-compose.yml locally (Folder 38)
       copy:
         src: "/host_apps/portainer_data/compose/38/docker-compose.yml"
         dest: "{{ local_backup_root }}/ullraudio/audio-compose.yml"
         remote_src: yes
 
-    - name: Upload arr-compose.yml to Proton Drive
+    - name: Upload audio-compose.yml to Proton Drive
       shell: >
         rclone copy
         "{{ local_backup_root }}/ullraudio/audio-compose.yml"
@@ -105,9 +113,8 @@
       environment:
         RCLONE_CONFIG_FILE: "/home/hrolgar/.config/rclone/rclone.conf"
 
-
     #######################################################
-    # Final Cleanup
+    # Final Cleanup – Remove Local Backups
     #######################################################
     - name: Remove local backups
       file:
