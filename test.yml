@@ -91,24 +91,18 @@
     #######################################################
     # Part 1B – Zip Folder Backup for Services Without Scheduled Backups
     #######################################################
-    - name: Ensure zip is installed on remote host
-      apt:
-        name: zip
-        state: present
-      delegate_to: ullrservarr
-      become: yes
-      when: ansible_os_family == "Debian"
-    - name: Ensure local backup directory for each zip service exists
+    - name: Ensure remote backup directory for each zip service exists
       file:
-        path: "{{ local_backup_root }}/{{ item.name }}"
+        path: "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}"
         state: directory
         mode: "0755"
+      delegate_to: ullrservarr
       loop: "{{ zip_services }}"
       loop_control:
         label: "{{ item.name }}"
-
+    
     - name: Zip the folder for each zip service
-      shell: "zip -r {{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip {{ item.folder }}"
+      shell: "zip -r /tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip {{ item.folder }}"
       delegate_to: ullrservarr
       register: zip_result
       retries: 3
@@ -117,11 +111,11 @@
       loop: "{{ zip_services }}"
       loop_control:
         label: "{{ item.name }}"
-
+    
     - name: Upload zipped folder backup to Proton Drive for each zip service
       shell: >
         rclone copy
-        "{{ local_backup_root }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
+        "/tmp/ansible_vm_backups/{{ today }}/{{ item.name }}/{{ item.name }}-{{ today }}.zip"
         "{{ proton_remote }}:backups/{{ today }}/ullrservices/{{ item.name }}"
       loop: "{{ zip_services }}"
       loop_control:
