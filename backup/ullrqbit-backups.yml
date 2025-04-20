@@ -69,7 +69,7 @@
     - name: Copy qBittorrent Docker‑Compose file from host mount
       ansible.builtin.copy:
         remote_src: yes
-        src: "/host_apps/portainer_data/compose/12/docker-compose.yml"
+        src: "/host_apps/portainer_data/compose/65/docker-compose.yml"
         dest: "{{ local_backup_root }}/compose/{{ compose_dest_name }}"
 
     - name: Ensure Proton Drive target path exists
