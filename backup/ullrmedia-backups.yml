@@ -46,23 +46,15 @@
       failed_when: upload_result.rc != 0
 
 
-      
-    - name: Show rclone upload output if it fails
-      debug:
-        msg: |
-          rc={{ upload_result.rc }}
-          stdout={{ upload_result.stdout }}
-          stderr={{ upload_result.stderr }}
-      when: upload_result.rc != 0
-
-
     - name: Upload docker‑compose backup to Proton Drive
-      shell: >
-        rclone copy
-          "{{ local_backup_root }}/compose/{{ compose_file }}"
-          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/"
-      environment:
-        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+      shell: |
+        /usr/bin/rclone \
+          --config /root/.config/rclone/rclone.conf \ 
+          copy \
+            "{{ local_backup_root }}/compose/{{ compose_file }}"
+            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/"
+      register: upload_comp_result
+      failed_when: upload_comp_result.rc != 0
 
     - name: Remove remote tarball
       shell: ssh ullrmedia "rm -f /tmp/{{ backup_name }}"
