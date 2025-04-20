@@ -70,4 +70,4 @@
       file:
         path: "{{ local_backup_root }}"
         state: absent
-        ignore_errors: true
+      ignore_errors: true
