@@ -64,14 +64,27 @@
         RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
       register: mkdir_result
       failed_when: mkdir_result.rc != 0 and 'already exists' not in mkdir_result.stderr
-
-    - name: Upload Jellyfin backup to Proton Drive
-      shell: >
-        rclone copy
-          "{{ local_backup_root }}/{{ backup_name }}"
+      
+    - name: Upload via shell, with explicit PATH
+      shell: |
+        rclone copy \
+          "{{ local_backup_root }}/{{ backup_name }}" \
           "{{ proton_remote }}:backups/{{ today }}/ullrmedia/"
       environment:
+        PATH: "/usr/local/bin:/usr/bin:{{ lookup('env','PATH') }}"
         RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+      register: upload_result
+      failed_when: upload_result.rc != 0
+
+      
+    - name: Show rclone upload output if it fails
+      debug:
+        msg: |
+          rc={{ upload_result.rc }}
+          stdout={{ upload_result.stdout }}
+          stderr={{ upload_result.stderr }}
+      when: upload_result.rc != 0
+
 
     - name: Upload docker‑compose backup to Proton Drive
       shell: >
