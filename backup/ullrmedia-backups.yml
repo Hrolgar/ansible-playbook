@@ -6,30 +6,30 @@
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     remote_app_path: /opt/nas/apps/Jellyfin
-    compose_src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
-    compose_dest: "/tmp/jellyfin-compose-{{ today }}.yml"
 
   tasks:
 
 
-
-    - name: List /tmp for verification
-      shell: ls -lh /tmp
-      register: tmp_ls
+    - name: Verify tarball exists
+      shell: ls -lh /tmp/{{ backup_name }}
+      register: check_tar
+      failed_when: check_tar.rc != 0
 
     - debug:
-        var: tmp_ls.stdout_lines
+        var: check_tar.stdout
 
-
-- name: Fetch, upload & clean up
+- name: Fetch, package compose & upload to Proton Drive
   hosts: localhost
-  gather_facts: true            # ← now gathering facts here too
+  gather_facts: true
   vars:
     today: "{{ ansible_date_time.date }}"
-    local_backup_root: "/ansible-backups/{{ today }}/jellyfin"
-    proton_remote: "proton-remote"
+    service_name: jellyfin
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
-    compose_file: "jellyfin-compose-{{ today }}.yml"
+    compose_file: "docker-compose-{{ today }}.yml"
+    # path on your Ansible-host VM where you keep compose files
+    compose_local_src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
+    local_backup_root: "/ansible-backups/{{ today }}/{{ service_name }}"
+    proton_remote: "proton-remote"
 
   tasks:
     - name: Ensure local backup staging directory exists
@@ -37,7 +37,6 @@
         path: "{{ local_backup_root }}"
         state: directory
         mode: '0755'
-      become: true
 
     - name: Fetch the tarball from ullrmedia
       fetch:
@@ -45,6 +44,18 @@
         dest: "{{ local_backup_root }}/"
         flat: yes
       delegate_to: ullrmedia
+
+    - name: Ensure compose folder exists
+      file:
+        path: "{{ local_backup_root }}/compose"
+        state: directory
+        mode: '0755'
+
+    - name: Copy Jellyfin docker‑compose.yml locally
+      copy:
+        src: "{{ compose_local_src }}"
+        dest: "{{ local_backup_root }}/compose/{{ compose_file }}"
+        remote_src: no
 
     - name: Ensure Proton Drive target directory exists
       shell: >
@@ -62,9 +73,16 @@
       environment:
         RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
 
-    - name: Remove remote tarball and compose file
-      shell: |
-        ssh ullrmedia "rm -f /tmp/{{ backup_name }}
+    - name: Upload docker‑compose backup to Proton Drive
+      shell: >
+        rclone copy
+          "{{ local_backup_root }}/compose/{{ compose_file }}"
+          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/"
+      environment:
+        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+
+    - name: Remove remote tarball
+      shell: ssh ullrmedia "rm -f /tmp/{{ backup_name }}"
 
     - name: Cleanup local backup staging area
       file:
