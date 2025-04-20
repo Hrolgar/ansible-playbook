@@ -53,13 +53,17 @@
           --config /root/.config/rclone/rclone.conf \
           copy \
             "{{ local_backup_root }}/compose/{{ compose_file }}" \
-            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/" \
+            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/" \
           --verbose
       register: upload_comp_result
       failed_when: upload_comp_result.rc != 0
 
     - name: Remove remote tarball
+      ansible.builtin.file:
       shell: ssh ullrmedia "rm -f /tmp/{{ backup_name }}"
+        path: "/tmp/{{ backup_name }}"
+        state: absent
+      delegate_to: ullrmedia
 
     - name: Cleanup local backup staging area
       file:
