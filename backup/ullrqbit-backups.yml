@@ -82,7 +82,7 @@
       shell: |
         rclone copy \
           "{{ local_backup_root }}/{{ backup_name }}" \
-          "{{ proton_remote }}:backups/{{ today }}/ullrqbit/{{ service_name }}/" \
+          "{{ proton_remote }}:backups/{{ today }}/ullrqbit/ \
           --verbose
       register: upload_zip
       failed_when: upload_zip.rc != 0
@@ -91,7 +91,7 @@
       shell: |
         rclone copy \
           "{{ local_backup_root }}/compose/{{ compose_dest_name }}" \
-          "{{ proton_remote }}:backups/{{ today }}/ullrqbit/{{ service_name }}/compose/" \
+          "{{ proton_remote }}:backups/{{ today }}/ullrqbit/" \
           --verbose
       register: upload_compose
       failed_when: upload_compose.rc != 0
