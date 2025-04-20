@@ -6,7 +6,7 @@
     remote_host: ullrmedia
     remote_app_path: /opt/nas/apps/Jellyfin
     today: "{{ ansible_date_time.date }}"
-    # match your ullraudio structure:
+    
     local_backup_root: "/ansible-backups/{{ today }}"
     proton_remote: "proton-remote"
     # we only have one “service” here—Jellyfin
@@ -45,7 +45,7 @@
 
     - name: Wait for Jellyfin to fully stop
       pause:
-        seconds: 15
+        seconds: 5
 
     - name: Create Jellyfin backup tarball on remote
       delegate_to: "{{ remote_host }}"
@@ -61,7 +61,7 @@
 
     - name: Wait for tarball write to finish
       pause:
-        seconds: 15
+        seconds: 5
 
     - name: Start Jellyfin container again
       delegate_to: "{{ remote_host }}"
@@ -82,11 +82,11 @@
         flat: yes
       delegate_to: "{{ remote_host }}"
 
-    - name: Cleanup remote tarball
-      file:
-        path: "/tmp/{{ backup_name }}"
-        state: absent
-      delegate_to: "{{ remote_host }}"
+    #- name: Cleanup remote tarball
+    #  file:
+    #    path: "/tmp/{{ backup_name }}"
+    #    state: absent
+    #  delegate_to: "{{ remote_host }}"
 
     ########################################################
     # Part 2 – Upload to Proton Drive
