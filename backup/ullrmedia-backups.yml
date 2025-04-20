@@ -1,8 +1,7 @@
 ---
 - name: Stop & archive Jellyfin on ullrmedia
   hosts: ullrmedia
-  gather_facts: false
-
+  gather_facts: true           # ← switched from false to true
   vars:
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
@@ -49,11 +48,9 @@
     - debug:
         var: tmp_ls.stdout_lines
 
-
 - name: Fetch, upload & clean up
   hosts: localhost
   gather_facts: false
-
   vars:
     today: "{{ ansible_date_time.date }}"
     local_backup_root: "/ansible-backups/{{ today }}/jellyfin"
