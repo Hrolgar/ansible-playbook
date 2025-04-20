@@ -57,13 +57,6 @@
         dest: "{{ local_backup_root }}/compose/{{ compose_file }}"
         remote_src: no
 
-    - name: Ensure Proton Drive target directory exists
-      shell: >
-        rclone mkdir "{{ proton_remote }}:backups/{{ today }}/ullrmedia"
-      environment:
-        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
-      register: mkdir_result
-      failed_when: mkdir_result.rc != 0 and 'already exists' not in mkdir_result.stderr
       
     - name: Upload via shell, with explicit PATH
       shell: |
