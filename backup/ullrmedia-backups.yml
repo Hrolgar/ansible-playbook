@@ -6,7 +6,7 @@
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     remote_app_path: /opt/nas/apps/Jellyfin
-    proton_remote: "proton-remote"
+
   tasks:
     - name: Stop Jellyfin container
       ansible.builtin.docker_container:
@@ -41,6 +41,7 @@
     - debug:
         var: check_tar.stdout
 
+
 - name: Fetch, package compose & upload to Proton Drive
   hosts: localhost
   gather_facts: true
@@ -55,7 +56,7 @@
 
   tasks:
     - name: Ensure local backup staging directory exists
-      file:
+      ansible.builtin.file:
         path: "{{ local_backup_root }}"
         state: directory
         mode: '0755'
@@ -68,54 +69,47 @@
       delegate_to: ullrmedia
 
     - name: Ensure compose folder exists
-      file:
+      ansible.builtin.file:
         path: "{{ local_backup_root }}/compose"
         state: directory
         mode: '0755'
 
     - name: Copy Jellyfin docker‑compose.yml locally
-      copy:
+      ansible.builtin.copy:
         src: "{{ compose_local_src }}"
         dest: "{{ local_backup_root }}/compose/{{ compose_file }}"
         remote_src: no
 
-    -name: Cat RCLONE_CONFIG_FILE
-    
-      
-    - name: Upload via shell, with explicit PATH
+    - name: Upload Jellyfin backup to Proton Drive
       shell: |
-        rclone copy \
-          "{{ local_backup_root }}/{{ backup_name }}" \
-          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/"
-      environment:
-        PATH: "/usr/local/bin:/usr/bin:{{ lookup('env','PATH') }}"
-        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+        /usr/bin/rclone \
+          --config /root/.config/rclone/rclone.conf \
+          copy \
+            "{{ local_backup_root }}/{{ backup_name }}" \
+            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/" \
+          --verbose
       register: upload_result
       failed_when: upload_result.rc != 0
 
-      
-    - name: Show rclone upload output if it fails
-      debug:
-        msg: |
-          rc={{ upload_result.rc }}
-          stdout={{ upload_result.stdout }}
-          stderr={{ upload_result.stderr }}
-      when: upload_result.rc != 0
-
-
     - name: Upload docker‑compose backup to Proton Drive
-      shell: >
-        rclone copy
-          "{{ local_backup_root }}/compose/{{ compose_file }}"
-          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/"
-      environment:
-        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+      shell: |
+        /usr/bin/rclone \
+          --config /root/.config/rclone/rclone.conf \
+          copy \
+            "{{ local_backup_root }}/compose/{{ compose_file }}" \
+            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/" \
+          --verbose
+      register: upload_comp_result
+      failed_when: upload_comp_result.rc != 0
 
     - name: Remove remote tarball
-      shell: ssh ullrmedia "rm -f /tmp/{{ backup_name }}"
+      ansible.builtin.file:
+        path: "/tmp/{{ backup_name }}"
+        state: absent
+      delegate_to: ullrmedia
 
     - name: Cleanup local backup staging area
-      file:
+      ansible.builtin.file:
         path: "{{ local_backup_root }}"
         state: absent
-        ignore_errors: true
+      ignore_errors: true
