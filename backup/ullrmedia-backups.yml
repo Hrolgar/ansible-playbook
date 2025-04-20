@@ -1,0 +1,134 @@
+- name: Download Jellyfin VM Backups and Upload to Proton Drive
+  hosts: localhost
+  gather_facts: true
+
+  vars:
+    remote_host: ullrmedia
+    remote_app_path: /opt/nas/apps/Jellyfin
+    today: "{{ ansible_date_time.date }}"
+    backup_name: "backup_jellyfin_{{ today }}.tar.gz"
+    # local staging area inside your Semaphore container
+    local_backup_root: "/tmp/ansible_vm_backups/{{ today }}/ullrmedia"
+    proton_remote: "proton-remote"
+    retention_count: 5
+
+  tasks:
+    ########################################################
+    # Prepare local directories
+    ########################################################
+    - name: Ensure local backup directory exists
+      file:
+        path: "{{ local_backup_root }}"
+        state: directory
+        mode: '0755'
+
+    ########################################################
+    # Stop Jellyfin container, wait for it to quiesce
+    ########################################################
+    - name: Stop Jellyfin container
+      delegate_to: "{{ remote_host }}"
+      ansible.builtin.docker_container:
+        name: jellyfin
+        state: stopped
+
+    - name: Pause to ensure container shutdown
+      pause:
+        seconds: 15
+
+    ########################################################
+    # Archive Jellyfin data
+    ########################################################
+    - name: Create Jellyfin backup tarball
+      delegate_to: "{{ remote_host }}"
+      shell: |
+        tar -czvf /tmp/{{ backup_name }} \
+          --exclude='config/metadata' \
+          --exclude='config/data/subtitles' \
+          --exclude='config/data/introskipper' \
+          --exclude='cache' \
+          -C "{{ remote_app_path }}" .
+      args:
+        chdir: /tmp
+
+    - name: Pause to ensure tarball is fully written
+      pause:
+        seconds: 15
+
+    ########################################################
+    # Restart Jellyfin
+    ########################################################
+    - name: Start Jellyfin container
+      delegate_to: "{{ remote_host }}"
+      ansible.builtin.docker_container:
+        name: jellyfin
+        state: started
+
+    ########################################################
+    # Fetch & upload the tarball
+    ########################################################
+    - name: Fetch backup tarball from Jellyfin host
+      fetch:
+        src: "/tmp/{{ backup_name }}"
+        dest: "{{ local_backup_root }}/"
+        flat: yes
+      delegate_to: "{{ remote_host }}"
+
+    - name: Upload Jellyfin backup to Proton Drive
+      shell: >
+        rclone copy
+          "{{ local_backup_root }}/{{ backup_name }}"
+          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/"
+      environment:
+        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+
+    - name: Cleanup remote tarball
+      file:
+        path: "/tmp/{{ backup_name }}"
+        state: absent
+      delegate_to: "{{ remote_host }}"
+
+    ########################################################
+    # Backup Docker‑Compose definition
+    ########################################################
+    - name: Ensure local compose-backup directory exists
+      file:
+        path: "{{ local_backup_root }}/compose"
+        state: directory
+        mode: '0755'
+
+    - name: Copy Jellyfin docker‑compose.yml from Portainer data
+      delegate_to: "{{ remote_host }}"
+      copy:
+        remote_src: yes
+        src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
+        dest: "/tmp/ullrmedia-compose-{{ today }}.yml"
+
+    - name: Fetch compose file locally
+      fetch:
+        src: "/tmp/ullrmedia-compose-{{ today }}.yml"
+        dest: "{{ local_backup_root }}/compose/"
+        flat: yes
+      delegate_to: "{{ remote_host }}"
+
+    - name: Upload docker‑compose backup to Proton Drive
+      shell: >
+        rclone copy
+          "{{ local_backup_root }}/compose/ullrmedia-compose-{{ today }}.yml"
+          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/"
+      environment:
+        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+
+    - name: Cleanup remote compose file
+      file:
+        path: "/tmp/ullrmedia-compose-{{ today }}.yml"
+        state: absent
+      delegate_to: "{{ remote_host }}"
+
+    ########################################################
+    # Final local cleanup
+    ########################################################
+    - name: Remove local backup staging area
+      file:
+        path: "{{ local_backup_root }}"
+        state: absent
+        ignore_errors: true
