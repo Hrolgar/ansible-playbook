@@ -13,6 +13,30 @@
     retention_count: 5
 
   tasks:
+      #######################################################
+    # Initial Setup – Create the full backup directory tree on localhost
+    #######################################################
+    - name: Ensure parent directory for local backup exists on localhost
+      file:
+        path: "{{ local_backup_root | dirname }}"
+        state: directory
+        mode: "0755"
+      become: true
+
+    - name: Ensure full local backup directory tree exists on localhost
+      shell: "/bin/mkdir -p {{ local_backup_root }}"
+      args:
+        creates: "{{ local_backup_root }}"
+      become: true
+      register: mkdir_result
+
+    - name: Verify that the local backup directory exists
+      command: /bin/ls -ld {{ local_backup_root }}
+      become: true
+      register: ls_result
+
+    - debug:
+        var: ls_result.stdout
     ########################################################
     # Prepare local directories
     ########################################################
