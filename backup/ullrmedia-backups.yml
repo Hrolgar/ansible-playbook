@@ -6,6 +6,7 @@
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     remote_app_path: /opt/nas/apps/Jellyfin
+    proton_remote: "proton-remote"
 
   tasks:
 
