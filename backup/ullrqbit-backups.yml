@@ -44,7 +44,6 @@
     backup_name: "{{ service_name }}-{{ today }}.zip"
     local_backup_root: "/ansible-backups/{{ today }}/{{ service_name }}"
     proton_remote: "proton-remote"
-    compose_src: "/host_apps/portainer_data/compose/12/docker-compose.yml"
     compose_dest_name: "qbittorrent-compose-{{ today }}.yml"
 
   tasks:
@@ -61,17 +60,18 @@
         flat: yes
       delegate_to: ullrqbit
 
-    - name: Ensure compose folder exists
-      ansible.builtin.file:
+    - name: Ensure compose folder exists locally
+      file:
         path: "{{ local_backup_root }}/compose"
         state: directory
         mode: '0755'
 
-    - name: Copy qBittorrent Docker‑Compose file from host mount
-      ansible.builtin.copy:
-        remote_src: yes
-        src: "{{ compose_src }}"
+    - name: Fetch qBittorrent Docker‑Compose file from ullrservices
+      fetch:
+        src: "/opt/nas/apps/portainer_data/compose/12/docker-compose.yml"
         dest: "{{ local_backup_root }}/compose/{{ compose_dest_name }}"
+        flat: yes
+      delegate_to: ullrservices
 
     - name: Ensure Proton Drive target path exists
       shell: |
@@ -98,13 +98,13 @@
       failed_when: upload_compose.rc != 0
 
     - name: Remove remote staging directory on ullrqbit
-      ansible.builtin.file:
+      file:
         path: "/tmp/ansible-backups/{{ today }}"
         state: absent
       delegate_to: ullrqbit
 
     - name: Cleanup local staging directory
-      ansible.builtin.file:
+      file:
         path: "{{ local_backup_root }}"
         state: absent
       ignore_errors: true
