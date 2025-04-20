@@ -6,7 +6,7 @@
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     remote_app_path: /opt/nas/apps/Jellyfin
-    compose_src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
+    compose_src: "/host_apps/portainer_data/compose/10/docker-compose.yml"
     compose_dest: "/tmp/jellyfin-compose-{{ today }}.yml"
 
   tasks:
