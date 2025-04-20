@@ -1,3 +1,4 @@
+---
 - name: Stop & archive Jellyfin on ullrmedia
   hosts: ullrmedia
   gather_facts: false
@@ -6,6 +7,8 @@
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     remote_app_path: /opt/nas/apps/Jellyfin
+    compose_src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
+    compose_dest: "/tmp/jellyfin-compose-{{ today }}.yml"
 
   tasks:
     - name: Stop Jellyfin container
@@ -14,28 +17,38 @@
         state: stopped
 
     - name: Wait for Jellyfin to fully stop
-      pause: seconds=5
+      pause:
+        seconds: 5
 
     - name: Create Jellyfin backup tarball
       shell: |
         tar -czvf /tmp/{{ backup_name }} \
-          --exclude=config/metadata \
-          --exclude=config/data/subtitles \
-          --exclude=config/data/introskipper \
-          --exclude=cache \
+          --exclude='config/metadata' \
+          --exclude='config/data/subtitles' \
+          --exclude='config/data/introskipper' \
+          --exclude='cache' \
           -C "{{ remote_app_path }}" .
-      args: { chdir: /tmp }
+      args:
+        chdir: /tmp
 
-    - name: Restart Jellyfin
+    - name: Restart Jellyfin container
       ansible.builtin.docker_container:
         name: jellyfin
         state: started
 
-    - name: List /tmp so we can confirm the tarball is there
+    - name: Copy Jellyfin docker‑compose.yml to /tmp
+      ansible.builtin.copy:
+        remote_src: yes
+        src: "{{ compose_src }}"
+        dest: "{{ compose_dest }}"
+
+    - name: List /tmp for verification
       shell: ls -lh /tmp
       register: tmp_ls
 
-    - debug: var=tmp_ls.stdout_lines
+    - debug:
+        var: tmp_ls.stdout_lines
+
 
 - name: Fetch, upload & clean up
   hosts: localhost
@@ -46,12 +59,15 @@
     local_backup_root: "/ansible-backups/{{ today }}/jellyfin"
     proton_remote: "proton-remote"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
+    compose_file: "jellyfin-compose-{{ today }}.yml"
 
   tasks:
-    - name: Ensure local backup directory exists
+    - name: Ensure local backup staging directory exists
       file:
         path: "{{ local_backup_root }}"
         state: directory
+        mode: '0755'
+      become: true
 
     - name: Fetch the tarball from ullrmedia
       fetch:
@@ -60,7 +76,22 @@
         flat: yes
       delegate_to: ullrmedia
 
-    - name: Upload to Proton Drive
+    - name: Fetch the compose file from ullrmedia
+      fetch:
+        src: "/tmp/{{ compose_file }}"
+        dest: "{{ local_backup_root }}/compose/"
+        flat: yes
+      delegate_to: ullrmedia
+
+    - name: Ensure Proton Drive target directory exists
+      shell: >
+        rclone mkdir "{{ proton_remote }}:backups/{{ today }}/ullrmedia"
+      environment:
+        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
+      register: mkdir_result
+      failed_when: mkdir_result.rc != 0 and 'already exists' not in mkdir_result.stderr
+
+    - name: Upload Jellyfin backup to Proton Drive
       shell: >
         rclone copy
           "{{ local_backup_root }}/{{ backup_name }}"
@@ -68,10 +99,19 @@
       environment:
         RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
 
-    - name: Remove remote tarball
-      shell: ssh ullrmedia "rm -f /tmp/{{ backup_name }}"
+    - name: Upload docker‑compose backup to Proton Drive
+      shell: >
+        rclone copy
+          "{{ local_backup_root }}/compose/{{ compose_file }}"
+          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/"
+      environment:
+        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
 
-    - name: Cleanup local staging
+    - name: Remove remote tarball and compose file
+      shell: |
+        ssh ullrmedia "rm -f /tmp/{{ backup_name }} /tmp/{{ compose_file }}"
+
+    - name: Cleanup local backup staging area
       file:
         path: "{{ local_backup_root }}"
         state: absent
