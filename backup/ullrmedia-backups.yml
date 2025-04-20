@@ -10,36 +10,8 @@
     compose_dest: "/tmp/jellyfin-compose-{{ today }}.yml"
 
   tasks:
-    - name: Stop Jellyfin container
-      ansible.builtin.docker_container:
-        name: jellyfin
-        state: stopped
 
-    - name: Wait for Jellyfin to fully stop
-      pause:
-        seconds: 5
 
-    - name: Create Jellyfin backup tarball
-      shell: |
-        tar -czvf /tmp/{{ backup_name }} \
-          --exclude='config/metadata' \
-          --exclude='config/data/subtitles' \
-          --exclude='config/data/introskipper' \
-          --exclude='cache' \
-          -C "{{ remote_app_path }}" .
-      args:
-        chdir: /tmp
-
-    - name: Restart Jellyfin container
-      ansible.builtin.docker_container:
-        name: jellyfin
-        state: started
-
-    - name: Copy Jellyfin docker‑compose.yml to /tmp
-      ansible.builtin.copy:
-        remote_src: yes
-        src: "{{ compose_src }}"
-        dest: "{{ compose_dest }}"
 
     - name: List /tmp for verification
       shell: ls -lh /tmp
