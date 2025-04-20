@@ -9,15 +9,47 @@
     proton_remote: "proton-remote"
 
   tasks:
+  - name: Stop & archive Jellyfin on ullrmedia
+    hosts: ullrmedia
+    gather_facts: true
+    vars:
+      today: "{{ ansible_date_time.date }}"
+      backup_name: "jellyfin_backup_{{ today }}.tar.gz"
+      remote_app_path: /opt/nas/apps/Jellyfin
 
+    tasks:
+      - name: Stop Jellyfin container
+        ansible.builtin.docker_container:
+          name: jellyfin
+          state: stopped
 
-    - name: Verify tarball exists
-      shell: ls -lh /tmp/{{ backup_name }}
-      register: check_tar
-      failed_when: check_tar.rc != 0
+      - name: Wait for Jellyfin to fully stop
+        pause:
+          seconds: 5
 
-    - debug:
-        var: check_tar.stdout
+      - name: Create Jellyfin backup tarball
+        shell: |
+          tar -czvf /tmp/{{ backup_name }} \
+            --exclude='config/metadata' \
+            --exclude='config/data/subtitles' \
+            --exclude='config/data/introskipper' \
+            --exclude='cache' \
+            -C "{{ remote_app_path }}" .
+        args:
+          chdir: /tmp
+
+      - name: Restart Jellyfin container
+        ansible.builtin.docker_container:
+          name: jellyfin
+          state: started
+
+      - name: Verify tarball exists
+        shell: ls -lh /tmp/{{ backup_name }}
+        register: check_tar
+        failed_when: check_tar.rc != 0
+
+      - debug:
+          var: check_tar.stdout
 
 - name: Fetch, package compose & upload to Proton Drive
   hosts: localhost
