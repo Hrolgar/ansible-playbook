@@ -27,7 +27,7 @@
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     compose_file: "docker-compose-{{ today }}.yml"
     # path on your Ansible-host VM where you keep compose files
-    compose_local_src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
+    compose_local_src: "/host_apps/portainer_data/compose/10/docker-compose.yml"
     local_backup_root: "/ansible-backups/{{ today }}/{{ service_name }}"
     proton_remote: "proton-remote"
 
