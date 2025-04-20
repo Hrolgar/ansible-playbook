@@ -82,7 +82,7 @@
       shell: |
         rclone copy \
           "{{ local_backup_root }}/{{ backup_name }}" \
-          "{{ proton_remote }}:backups/{{ today }}/ullrqbit/ \
+          "{{ proton_remote }}:backups/{{ today }}/ullrqbit/" \
           --verbose
       register: upload_zip
       failed_when: upload_zip.rc != 0
