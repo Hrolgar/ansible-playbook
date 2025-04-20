@@ -61,8 +61,8 @@
         flat: yes
       delegate_to: ullrqbit
 
-    - name: Ensure compose folder exists locally
-      file:
+    - name: Ensure compose folder exists
+      ansible.builtin.file:
         path: "{{ local_backup_root }}/compose"
         state: directory
         mode: '0755'
