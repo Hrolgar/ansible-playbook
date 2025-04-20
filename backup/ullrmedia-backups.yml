@@ -33,42 +33,7 @@
     proton_remote: "proton-remote"
 
   tasks:
-    - name: Ensure local backup staging directory exists
-      file:
-        path: "{{ local_backup_root }}"
-        state: directory
-        mode: '0755'
-
-    - name: Fetch the tarball from ullrmedia
-      fetch:
-        src: "/tmp/{{ backup_name }}"
-        dest: "{{ local_backup_root }}/"
-        flat: yes
-      delegate_to: ullrmedia
-
-    - name: Ensure compose folder exists
-      file:
-        path: "{{ local_backup_root }}/compose"
-        state: directory
-        mode: '0755'
-
-    - name: Copy Jellyfin docker‑compose.yml locally
-      copy:
-        src: "{{ compose_local_src }}"
-        dest: "{{ local_backup_root }}/compose/{{ compose_file }}"
-        remote_src: no
-
-    - name: Show host’s rclone.conf
-      shell: cat /home/hrolgar/.config/rclone/rclone.conf
-      delegate_to: ullrservices
-      register: rclone_conf
-      changed_when: false
-
-    - name: Debug rclone.conf contents
-      debug:
-        msg: "{{ rclone_conf.stdout }}"
-
-      
+        
     - name: Upload Jellyfin backup to Proton Drive
       shell: |
         /usr/bin/rclone \
