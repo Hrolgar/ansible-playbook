@@ -58,11 +58,11 @@
       register: upload_comp_result
       failed_when: upload_comp_result.rc != 0
       
-  - name: Remove remote tarball
-    ansible.builtin.file:
-      path: "/tmp/{{ backup_name }}"
-      state: absent
-    delegate_to: ullrmedia
+    - name: Remove remote tarball
+      ansible.builtin.file:
+        path: "/tmp/{{ backup_name }}"
+        state: absent
+      delegate_to: ullrmedia
 
 
 
