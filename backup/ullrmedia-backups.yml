@@ -46,13 +46,15 @@
       failed_when: upload_result.rc != 0
 
 
+
     - name: Upload docker‑compose backup to Proton Drive
       shell: |
         /usr/bin/rclone \
-          --config /root/.config/rclone/rclone.conf \ 
+          --config /root/.config/rclone/rclone.conf \
           copy \
-            "{{ local_backup_root }}/compose/{{ compose_file }}"
-            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/"
+            "{{ local_backup_root }}/compose/{{ compose_file }}" \
+            "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/" \
+          --verbose
       register: upload_comp_result
       failed_when: upload_comp_result.rc != 0
 
