@@ -1,12 +1,12 @@
 ---
 - name: Stop & archive Jellyfin on ullrmedia
   hosts: ullrmedia
-  gather_facts: true           # ← switched from false to true
+  gather_facts: true
   vars:
     today: "{{ ansible_date_time.date }}"
     backup_name: "jellyfin_backup_{{ today }}.tar.gz"
     remote_app_path: /opt/nas/apps/Jellyfin
-    compose_src: "/host_apps/portainer_data/compose/10/docker-compose.yml"
+    compose_src: "/host_apps/portainer_data/compose/‹YOUR‑FOLDER‑ID›/docker-compose.yml"
     compose_dest: "/tmp/jellyfin-compose-{{ today }}.yml"
 
   tasks:
@@ -35,7 +35,11 @@
         name: jellyfin
         state: started
 
-
+    - name: Copy Jellyfin docker‑compose.yml to /tmp
+      ansible.builtin.copy:
+        remote_src: yes
+        src: "{{ compose_src }}"
+        dest: "{{ compose_dest }}"
 
     - name: List /tmp for verification
       shell: ls -lh /tmp
@@ -44,9 +48,10 @@
     - debug:
         var: tmp_ls.stdout_lines
 
+
 - name: Fetch, upload & clean up
   hosts: localhost
-  gather_facts: false
+  gather_facts: true            # ← now gathering facts here too
   vars:
     today: "{{ ansible_date_time.date }}"
     local_backup_root: "/ansible-backups/{{ today }}/jellyfin"
