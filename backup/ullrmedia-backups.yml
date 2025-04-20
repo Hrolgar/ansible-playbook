@@ -46,13 +46,6 @@
         flat: yes
       delegate_to: ullrmedia
 
-    - name: Fetch the compose file from ullrmedia
-      fetch:
-        src: "/tmp/{{ compose_file }}"
-        dest: "{{ local_backup_root }}/compose/"
-        flat: yes
-      delegate_to: ullrmedia
-
     - name: Ensure Proton Drive target directory exists
       shell: >
         rclone mkdir "{{ proton_remote }}:backups/{{ today }}/ullrmedia"
@@ -69,17 +62,9 @@
       environment:
         RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
 
-    - name: Upload docker‑compose backup to Proton Drive
-      shell: >
-        rclone copy
-          "{{ local_backup_root }}/compose/{{ compose_file }}"
-          "{{ proton_remote }}:backups/{{ today }}/ullrmedia/compose/"
-      environment:
-        RCLONE_CONFIG_FILE: "{{ lookup('env','HOME') }}/.config/rclone/rclone.conf"
-
     - name: Remove remote tarball and compose file
       shell: |
-        ssh ullrmedia "rm -f /tmp/{{ backup_name }} /tmp/{{ compose_file }}"
+        ssh ullrmedia "rm -f /tmp/{{ backup_name }}
 
     - name: Cleanup local backup staging area
       file:
