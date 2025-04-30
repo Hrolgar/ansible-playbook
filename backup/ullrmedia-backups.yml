@@ -87,7 +87,8 @@
           copy \
             "{{ local_backup_root }}/{{ backup_name }}" \
             "{{ proton_remote }}:backups/{{ today }}/ullrmedia/jellyfin" \
-          --verbose
+          --verbose \
+          --protondrive-replace-existing-draft=true
       register: upload_result
       failed_when: upload_result.rc != 0
 
@@ -98,7 +99,8 @@
           copy \
             "{{ local_backup_root }}/compose/{{ compose_file }}" \
             "{{ proton_remote }}:backups/{{ today }}/ullrmedia/jellyfin" \
-          --verbose
+          --verbose \ 
+          --protondrive-replace-existing-draft=true
       register: upload_comp_result
       failed_when: upload_comp_result.rc != 0
 
