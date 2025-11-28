@@ -94,14 +94,16 @@
       until: fetch_result is success
 
     - name: STEP 1A: PURGE remote directory to ensure clean state
-      shell: 'rclone purge "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}"'
+      shell: >
+        rclone purge "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item.name }}"
       ignore_errors: true
 
     - name: STEP 1B: UPLOAD backup files to Proton Drive
-      shell: 'rclone sync --protondrive-replace-existing-draft=true "{{ local_backup_root }}/{{ item.name }}/" "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}"'
+      shell: >
+        rclone sync --protondrive-replace-existing-draft=true "{{ local_backup_root }}/{{ item.name }}/" "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item.name }}"
@@ -122,11 +124,13 @@
         remote_src: yes
 
     - name: STEP 2A: DELETE existing remote compose file to ensure clean state
-      shell: 'rclone deletefile "{{ proton_remote }}:backups/{{ today }}/ullraudio/audio-compose.yml"'
+      shell: >
+        rclone deletefile "{{ proton_remote }}:backups/{{ today }}/ullraudio/audio-compose.yml"
       ignore_errors: true
 
     - name: STEP 2B: UPLOAD compose file to Proton Drive
-      shell: 'rclone sync --protondrive-replace-existing-draft=true "{{ local_backup_root }}/ullraudio/" "{{ proton_remote }}:backups/{{ today }}/ullraudio/" --include "audio-compose.yml"'
+      shell: >
+        rclone sync --protondrive-replace-existing-draft=true "{{ local_backup_root }}/ullraudio/" "{{ proton_remote }}:backups/{{ today }}/ullraudio/" --include "audio-compose.yml"
 
     #######################################################
     # Final Cleanup – Remove Local Backups
