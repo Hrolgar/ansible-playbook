@@ -95,9 +95,8 @@
 
     - name: Upload backup files to Proton Drive for each service
       shell: >
-        rclone sync --protondrive-replace-existing-draft=true
-        "{{ local_backup_root }}/{{ item.name }}/"
-        "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}"
+        rclone purge "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}" && \
+        rclone sync --protondrive-replace-existing-draft=true "{{ local_backup_root }}/{{ item.name }}/" "{{ proton_remote }}:backups/{{ today }}/ullraudio/{{ item.name }}"
       loop: "{{ services }}"
       loop_control:
         label: "{{ item.name }}"
@@ -119,9 +118,8 @@
 
     - name: Upload audio-compose.yml to Proton Drive
       shell: >
-        rclone sync --protondrive-replace-existing-draft=true
-        "{{ local_backup_root }}/ullraudio/"
-        "{{ proton_remote }}:backups/{{ today }}/ullraudio/"
+        rclone deletefile "{{ proton_remote }}:backups/{{ today }}/ullraudio/audio-compose.yml" || true && \
+        rclone sync --protondrive-replace-existing-draft=true "{{ local_backup_root }}/ullraudio/" "{{ proton_remote }}:backups/{{ today }}/ullraudio/" --include "audio-compose.yml"
 
     #######################################################
     # Final Cleanup – Remove Local Backups
